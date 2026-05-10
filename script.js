@@ -1,100 +1,149 @@
+// Variáveis Globais
 let chartCurva, chartEnvoltoria;
-let pontosEnvoltoria = [];
+let ensaios = [];
 
-const ctxCurva = document.getElementById('chartCurva').getContext('2d');
-const ctxEnvoltoria = document.getElementById('chartEnvoltoria').getContext('2d');
+const canvas = document.getElementById('canvasMEF');
+const ctx = canvas.getContext('2d');
 
-function calcularCurva() {
-    const sigmaN = parseFloat(document.getElementById('sigmaN').value);
-    const c = parseFloat(document.getElementById('coesao').value);
-    const phi = parseFloat(document.getElementById('phi').value) * (Math.PI / 180);
+// Inicialização
+window.onload = () => {
+    atualizarSimulacao();
+    document.querySelectorAll('input').forEach(i => i.addEventListener('input', atualizarSimulacao));
+};
+
+function atualizarSimulacao() {
+    const params = getParams();
+    atualizarUI(params);
     
-    document.getElementById('valSigma').innerText = sigmaN;
-    document.getElementById('valC').innerText = c;
-    document.getElementById('valPhi').innerText = document.getElementById('phi').value;
+    // 1. Calcular Dados
+    const tauPico = params.c + params.sigmaN * Math.tan(params.phiRad);
+    const curvaData = gerarPontosCurva(tauPico, params.dx);
 
-    const tauPico = c + sigmaN * Math.tan(phi);
-    const labels = [];
-    const data = [];
+    // 2. Renderizar Gráficos
+    renderizarCurva(curvaData.labels, curvaData.values);
+    renderizarEnvoltoria();
 
-    for (let x = 0; x <= 10; x += 0.5) {
-        labels.push(x.toFixed(1));
-        const tau = x / (1 / 25 + x / tauPico);
-        data.push(tau.toFixed(2));
-    }
-
-    renderizarCurva(labels, data);
+    // 3. Desenhar MEF
+    desenharMEF(params, tauPico);
 }
 
-function renderizarCurva(labels, data) {
+function getParams() {
+    const sigmaN = parseFloat(document.getElementById('sigmaN').value);
+    const c = parseFloat(document.getElementById('coesao').value);
+    const phi = parseFloat(document.getElementById('phi').value);
+    const dx = parseFloat(document.getElementById('dx').value);
+    return { sigmaN, c, phi, phiRad: (phi * Math.PI) / 180, dx };
+}
+
+function atualizarUI(p) {
+    document.getElementById('valSigma').innerText = p.sigmaN;
+    document.getElementById('valC').innerText = p.c;
+    document.getElementById('valPhi').innerText = p.phi;
+    document.getElementById('valDx').innerText = p.dx;
+}
+
+// --- LÓGICA DE ELEMENTOS FINITOS (VISUAL) ---
+function desenharMEF(p, tauPico) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const meio = h / 2;
+    const tamGrid = 25;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Fator de tensão para o Mapa de Calor (0 a 1)
+    const tensaoAtual = (p.dx / (1 / 5 + p.dx / tauPico)) / tauPico;
+    
+    // Desenhar Malha Superior (Móvel)
+    for (let x = -tamGrid; x < w + tamGrid; x += tamGrid) {
+        for (let y = 0; y < meio; y += tamGrid) {
+            const distX = x + (p.dx * 15); // Deslocamento visual exagerado
+            const hue = 200 - (tensaoAtual * 200); // De azul (frio) para vermelho (quente)
+            ctx.fillStyle = `hsla(${hue}, 70%, 40%, 0.6)`;
+            ctx.strokeStyle = "#333";
+            ctx.fillRect(distX, y, tamGrid, tamGrid);
+            ctx.strokeRect(distX, y, tamGrid, tamGrid);
+        }
+    }
+
+    // Desenhar Malha Inferior (Fixa)
+    for (let x = 0; x < w; x += tamGrid) {
+        for (let y = meio; y < h; y += tamGrid) {
+            ctx.fillStyle = "#34495e";
+            ctx.strokeStyle = "#2c3e50";
+            ctx.fillRect(x, y, tamGrid, tamGrid);
+            ctx.strokeRect(x, y, tamGrid, tamGrid);
+        }
+    }
+
+    // Linha de Interface (Emulsão)
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = tensaoAtual > 0.9 ? "#ff0000" : "#00efff";
+    ctx.moveTo(0, meio);
+    ctx.lineTo(w, meio);
+    ctx.stroke();
+}
+
+// --- LÓGICA DE GRÁFICOS ---
+function gerarPontosCurva(tauPico, dxFinal) {
+    const labels = [];
+    const values = [];
+    for (let i = 0; i <= 15; i += 0.5) {
+        labels.push(i.toFixed(1));
+        const tau = i / (1 / 10 + i / tauPico);
+        values.push(tau.toFixed(2));
+    }
+    return { labels, values };
+}
+
+function renderizarCurva(labels, values) {
     if (chartCurva) chartCurva.destroy();
-    chartCurva = new Chart(ctxCurva, {
+    chartCurva = new Chart(document.getElementById('chartCurva'), {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Ensaio Atual (τ vs ΔL)',
-                data: data,
+                label: 'Tensão de Cisalhamento (kPa)',
+                data: values,
                 borderColor: '#3498db',
-                fill: false
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(52, 152, 219, 0.1)'
             }]
         },
-        options: { responsive: true, scales: { y: { title: { display: true, text: 'Tensão (kPa)' } } } }
+        options: { animation: false, scales: { y: { min: 0 } } }
     });
 }
 
-function registrarEnsaio() {
-    const sigmaN = parseFloat(document.getElementById('sigmaN').value);
-    const c = parseFloat(document.getElementById('coesao').value);
-    const phi = parseFloat(document.getElementById('phi').value) * (Math.PI / 180);
-    const tauPico = c + sigmaN * Math.tan(phi);
-
-    pontosEnvoltoria.push({ x: sigmaN, y: tauPico });
-    atualizarTabela();
-    renderizarEnvoltoria();
-}
-
-function atualizarTabela() {
-    const tbody = document.querySelector('#tabelaEnsaios tbody');
-    tbody.innerHTML = "";
-    pontosEnvoltoria.forEach((p, i) => {
-        tbody.innerHTML += `<tr><td>${i+1}</td><td>${p.x}</td><td>${p.y.toFixed(2)}</td></tr>`;
-    });
+function registrarPonto() {
+    const p = getParams();
+    const tauPico = p.c + p.sigmaN * Math.tan(p.phiRad);
+    ensaios.push({ x: p.sigmaN, y: tauPico });
+    atualizarSimulacao();
 }
 
 function renderizarEnvoltoria() {
     if (chartEnvoltoria) chartEnvoltoria.destroy();
+    const pontos = [...ensaios].sort((a,b) => a.x - b.x);
     
-    // Ordenar pontos por SigmaN para a linha ficar correta
-    const sortedPoints = [...pontosEnvoltoria].sort((a, b) => a.x - b.x);
-
-    chartEnvoltoria = new Chart(ctxEnvoltoria, {
+    chartEnvoltoria = new Chart(document.getElementById('chartEnvoltoria'), {
         type: 'scatter',
         data: {
             datasets: [{
-                label: 'Envoltória de Resistência',
-                data: sortedPoints,
+                label: 'Envoltória (Mohr-Coulomb)',
+                data: pontos,
                 showLine: true,
                 borderColor: '#e67e22',
                 backgroundColor: '#e67e22',
                 pointRadius: 6
             }]
         },
-        options: {
-            scales: {
-                x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Tensão Normal σ (kPa)' }, min: 0 },
-                y: { title: { display: true, text: 'Resistência τ (kPa)' }, min: 0 }
-            }
-        }
+        options: { scales: { x: { min: 0, title: {display:true, text:'σn (kPa)'} }, y: { min: 0, title: {display:true, text:'τ (kPa)'} } } }
     });
 }
 
-function limparEnsaios() {
-    pontosEnvoltoria = [];
-    atualizarTabela();
-    renderizarEnvoltoria();
+function limparTudo() {
+    ensaios = [];
+    atualizarSimulacao();
 }
-
-document.querySelectorAll('input').forEach(input => input.addEventListener('input', calcularCurva));
-calcularCurva();
-renderizarEnvoltoria();

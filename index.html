@@ -1,82 +1,510 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoSim - Elementos Finitos & Interface</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; color: var(--primary); }
-        .wrapper { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
-        
-        /* Painel Lateral */
-        .sidebar { background: white; padding: 20px; border-right: 1px solid #ddd; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
-        .control-group { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 0.9em; }
-        input[type="range"] { width: 100%; cursor: pointer; }
-        button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-add { background: var(--success); color: white; }
-        .btn-clear { background: var(--danger); color: white; }
-        
-        /* Área Principal */
-        .main-content { padding: 20px; overflow-y: auto; }
-        .card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .mef-container { background: #1a1a1a; border-radius: 8px; position: relative; overflow: hidden; }
-        canvas { width: 100%; display: block; }
-        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        h2 { margin-top: 0; font-size: 1.2em; border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
-        .stats { display: flex; justify-content: space-between; font-family: monospace; background: #eee; padding: 5px 10px; border-radius: 4px; margin-bottom: 10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Science Twin — Aprenda inglês fazendo ciência</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark:    #0C4A2E;
+      --green-mid:     #085041;
+      --green-main:    #1D9E75;
+      --green-light:   #5DCAA5;
+      --green-pale:    #9FE1CB;
+      --green-mist:    #E1F5EE;
+      --text-primary:  #1A1A1A;
+      --text-secondary:#6B7280;
+      --bg-primary:    #FFFFFF;
+      --bg-secondary:  #F9FAFB;
+      --border-light:  #E5E7EB;
+      --border-mid:    #D1D5DB;
+      --radius-lg:     14px;
+      --radius-md:     10px;
+      --radius-sm:     6px;
+    }
+
+    body {
+      background: #F0F2F5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      font-family: 'Georgia', serif;
+    }
+
+    /* PHONE SHELL */
+    .phone {
+      width: 360px;
+      background: var(--bg-primary);
+      border-radius: 40px;
+      border: 8px solid #222;
+      box-shadow: 0 0 0 1px #444, 0 32px 64px rgba(0,0,0,0.25);
+      overflow: hidden;
+      min-height: 680px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .status-bar {
+      background: var(--green-dark);
+      color: var(--green-pale);
+      font-size: 11px;
+      font-family: 'Georgia', serif;
+      padding: 8px 22px 7px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* SCREENS */
+    .screen { display: none; flex-direction: column; flex: 1; }
+    .screen.active { display: flex; }
+
+    /* ── ONBOARDING ── */
+    .onboard-hero {
+      background: var(--green-dark);
+      padding: 36px 24px 30px;
+      text-align: center;
+    }
+    .app-icon {
+      width: 68px; height: 68px;
+      background: var(--green-main);
+      border-radius: 20px;
+      margin: 0 auto 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-icon i { font-size: 34px; color: var(--green-mist); }
+    .onboard-title { font-size: 24px; font-weight: 700; color: var(--green-mist); letter-spacing: -0.5px; }
+    .onboard-sub { font-size: 14px; color: var(--green-light); margin-top: 6px; font-style: italic; }
+
+    .onboard-body { padding: 22px 20px 18px; flex: 1; }
+    .onboard-intro { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.7; }
+
+    .mission-preview {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .mission-label {
+      font-size: 11px; font-weight: 700; color: var(--green-main);
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px;
+    }
+    .mission-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+    .mission-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .mission-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .tag {
+      font-size: 11px; padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--green-mist); color: var(--green-mid);
+      border: 1px solid var(--green-light);
+      font-family: 'Georgia', serif;
+    }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: var(--green-main); color: #fff;
+      border: none; border-radius: var(--radius-lg);
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 6px;
+      font-family: 'Georgia', serif;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #17866A; }
+    .btn-secondary {
+      width: 100%; padding: 12px;
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-lg);
+      font-size: 14px; cursor: pointer; margin-top: 8px;
+      font-family: 'Georgia', serif;
+    }
+
+    /* ── HOME ── */
+    .home-header { background: var(--green-dark); padding: 22px 20px 26px; }
+    .home-greeting { font-size: 13px; color: var(--green-light); font-style: italic; }
+    .home-name { font-size: 22px; font-weight: 700; color: var(--green-mist); margin-top: 2px; }
+    .xp-bar-wrap { margin-top: 16px; }
+    .xp-label { font-size: 12px; color: var(--green-pale); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .xp-bar { background: var(--green-mid); border-radius: 4px; height: 7px; }
+    .xp-fill { background: var(--green-light); border-radius: 4px; height: 7px; width: 42%; transition: width 0.6s ease; }
+
+    .home-body { padding: 18px 16px; flex: 1; overflow-y: auto; }
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--text-secondary);
+      margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.07em;
+    }
+
+    .mission-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 15px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .mission-card:hover { border-color: var(--green-light); box-shadow: 0 2px 12px rgba(29,158,117,0.1); }
+    .mission-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .mission-card-area { font-size: 11px; color: var(--green-main); font-weight: 700; }
+    .mission-card-diff { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 700; }
+    .diff-easy   { background: #EAF3DE; color: #3B6D11; }
+    .diff-medium { background: #FAEEDA; color: #854F0B; }
+    .diff-hard   { background: #FCEBEB; color: #A32D2D; }
+    .mission-card-title { font-size: 15px; font-weight: 700; margin: 6px 0 4px; color: var(--text-primary); }
+    .mission-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+    .mission-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 11px; }
+    .mission-xp { font-size: 12px; color: var(--green-main); font-weight: 700; }
+    .mission-time { font-size: 12px; color: var(--text-secondary); }
+
+    /* ── MISSION ── */
+    .mission-header { background: var(--green-dark); padding: 16px 18px 22px; }
+    .back-btn { font-size: 13px; color: var(--green-pale); cursor: pointer; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 5px; }
+    .back-btn:hover { color: #fff; }
+    .mission-h-area { font-size: 11px; color: var(--green-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+    .mission-h-title { font-size: 19px; font-weight: 700; color: var(--green-mist); margin-top: 4px; line-height: 1.3; }
+
+    .mission-body { padding: 16px; flex: 1; overflow-y: auto; }
+
+    .hint-tip {
+      font-size: 12px; color: var(--green-main); text-align: center;
+      margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 5px;
+      background: var(--green-mist); border-radius: var(--radius-md); padding: 8px;
+    }
+
+    .doc-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 16px;
+      font-size: 14px; line-height: 1.85; color: var(--text-primary);
+    }
+    .doc-from {
+      font-size: 12px; color: var(--text-secondary);
+      margin-bottom: 12px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    /* TOOLTIP SYSTEM */
+    .word-hint {
+      border-bottom: 2px dashed var(--green-main);
+      color: #0F6E56;
+      cursor: default;
+      position: relative;
+      display: inline-block;
+    }
+    .word-hint .tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--green-dark);
+      color: var(--green-mist);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 100;
+      white-space: nowrap;
+      max-width: 220px;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.4;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .word-hint .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--green-dark);
+    }
+    .word-hint:hover .tooltip { visibility: visible; opacity: 1; }
+
+    .response-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+    .response-input {
+      width: 100%;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      padding: 11px 13px;
+      font-size: 14px; line-height: 1.6;
+      min-height: 90px; resize: none;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      font-family: 'Georgia', serif;
+      transition: border-color 0.15s;
+    }
+    .response-input:focus { outline: none; border-color: var(--green-main); }
+    .response-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-send {
+      flex: 1; padding: 13px;
+      background: var(--green-main); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      font-family: 'Georgia', serif;
+      transition: background 0.15s;
+    }
+    .btn-send:hover { background: #17866A; }
+    .btn-mic {
+      padding: 13px 15px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      font-size: 20px; cursor: pointer;
+      color: var(--text-secondary);
+      transition: border-color 0.15s;
+    }
+    .btn-mic:hover { border-color: var(--green-light); color: var(--green-main); }
+
+    /* ── FEEDBACK ── */
+    .feedback-header { background: var(--green-dark); padding: 20px 18px; }
+    .feedback-score { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+    .score-circle {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--green-main);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .score-details { color: var(--green-pale); font-size: 13px; line-height: 1.65; }
+    .score-label { font-size: 17px; font-weight: 700; color: var(--green-mist); }
+    .feedback-body { padding: 16px; flex: 1; overflow-y: auto; }
+    .feedback-block {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      padding: 15px;
+      margin-bottom: 12px;
+      background: var(--bg-primary);
+    }
+    .fb-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 9px; }
+    .fb-success .fb-title { color: #3B6D11; }
+    .fb-improve .fb-title { color: #854F0B; }
+    .fb-original { font-size: 13px; color: var(--text-secondary); font-style: italic; margin-bottom: 6px; }
+    .fb-corrected {
+      font-size: 14px; color: var(--text-primary);
+      background: #EAF3DE; border-radius: var(--radius-sm);
+      padding: 9px 11px; font-weight: 600;
+    }
+    .fb-note { font-size: 13px; color: var(--text-secondary); margin-top: 7px; line-height: 1.6; }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      display: flex;
+      border-top: 1px solid var(--border-light);
+      padding: 8px 0 14px;
+      background: var(--bg-primary);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      cursor: pointer; padding: 4px 0;
+    }
+    .nav-item i { font-size: 22px; color: var(--text-secondary); }
+    .nav-item.active i { color: var(--green-main); }
+    .nav-item span { font-size: 10px; color: var(--text-secondary); font-family: 'Georgia', serif; }
+    .nav-item.active span { color: var(--green-main); font-weight: 700; }
+  </style>
 </head>
 <body>
-    <div class="wrapper">
-        <aside class="sidebar">
-            <h2>Configurações</h2>
-            <div class="control-group">
-                <label>Tensão Normal (σn): <span id="valSigma">100</span> kPa</label>
-                <input type="range" id="sigmaN" min="20" max="500" value="100">
-            </div>
-            <div class="control-group">
-                <label>Adesão Interface (c): <span id="valC">25</span> kPa</label>
-                <input type="range" id="coesao" min="0" max="100" value="25">
-            </div>
-            <div class="control-group">
-                <label>Ângulo de Atrito (δ): <span id="valPhi">30</span>°</label>
-                <input type="range" id="phi" min="5" max="45" value="30">
-            </div>
-            <div class="control-group">
-                <label>Deslocamento (ΔL): <span id="valDx">5</span> mm</label>
-                <input type="range" id="dx" min="0" max="15" step="0.1" value="5">
-            </div>
-            <button class="btn-add" onclick="registrarPonto()">Registrar Ensaio</button>
-            <button class="btn-clear" onclick="limparTudo()">Limpar Dados</button>
-            
-            <div style="margin-top: 30px;">
-                <h2>Resultados</h2>
-                <div id="listaEnsaios"></div>
-            </div>
-        </aside>
 
-        <main class="main-content">
-            <div class="card mef-container">
-                <h2 style="color: white; border-color: #555;">Visualização de Elementos Finitos (Stress Map)</h2>
-                <canvas id="canvasMEF" width="800" height="250"></canvas>
-            </div>
+<div class="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>Science Twin</span>
+    <span><i class="ti ti-wifi"></i> <i class="ti ti-battery"></i></span>
+  </div>
 
-            <div class="charts-grid">
-                <div class="card">
-                    <h2>Tensão x Deslocamento</h2>
-                    <canvas id="chartCurva"></canvas>
-                </div>
-                <div class="card">
-                    <h2>Envoltória de Resistência</h2>
-                    <canvas id="chartEnvoltoria"></canvas>
-                </div>
-            </div>
-        </main>
+  <!-- ── ONBOARDING ── -->
+  <div class="screen active" id="screen-onboard">
+    <div class="onboard-hero">
+      <div class="app-icon"><i class="ti ti-flask"></i></div>
+      <div class="onboard-title">Science Twin</div>
+      <div class="onboard-sub">Aprenda inglês fazendo ciência</div>
     </div>
-    <script src="script.js"></script>
+    <div class="onboard-body">
+      <p class="onboard-intro">Sua primeira missão — leia um relatório real e responda como um cientista:</p>
+      <div class="mission-preview">
+        <div class="mission-label"><i class="ti ti-satellite" style="font-size:12px;margin-right:4px"></i>Oceanografia</div>
+        <div class="mission-title">Anomalia Térmica no Atlântico</div>
+        <div class="mission-desc">Um pesquisador da NOAA detectou variação de temperatura incomum. Leia o relatório e compartilhe sua análise.</div>
+        <div class="mission-tags">
+          <span class="tag">Iniciante</span>
+          <span class="tag">~10 min</span>
+          <span class="tag">+80 XP</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="go('home')">Começar agora →</button>
+      <button class="btn-secondary" onclick="go('home')">Explorar missões primeiro</button>
+    </div>
+  </div>
+
+  <!-- ── HOME ── -->
+  <div class="screen" id="screen-home">
+    <div class="home-header">
+      <div class="home-greeting">Bem-vindo de volta</div>
+      <div class="home-name">Dr. Silva 🔬</div>
+      <div class="xp-bar-wrap">
+        <div class="xp-label"><span>Nível 3 — Pesquisador</span><span>420 / 1000 XP</span></div>
+        <div class="xp-bar"><div class="xp-fill"></div></div>
+      </div>
+    </div>
+    <div class="home-body">
+      <div class="section-title">Missão do dia</div>
+      <div class="mission-card" onclick="go('mission')">
+        <div class="mission-card-top">
+          <span class="mission-card-area"><i class="ti ti-satellite" style="font-size:11px;margin-right:3px"></i>Oceanografia</span>
+          <span class="mission-card-diff diff-easy">Iniciante</span>
+        </div>
+        <div class="mission-card-title">Anomalia Térmica no Atlântico</div>
+        <div class="mission-card-desc">Relatório da NOAA sobre variação de temperatura. Leia e responda ao pesquisador.</div>
+        <div class="mission-card-footer">
+          <span class="mission-xp">+80 XP</span>
+          <span class="mission-time"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ~10 min</span>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:18px">Mais missões</div>
+      <div class="mission-card" onclick="go('mission')">
+        <div class="mission-card-top">
+          <span class="mission-card-area"><i class="ti ti-dna" style="font-size:11px;margin-right:3px"></i>Genômica</span>
+          <span class="mission-card-diff diff-medium">Intermediário</span>
+        </div>
+        <div class="mission-card-title">CRISPR Gene Editing Update</div>
+        <div class="mission-card-desc">Novo artigo na Nature. Resuma as descobertas em inglês simples.</div>
+        <div class="mission-card-footer">
+          <span class="mission-xp">+150 XP</span>
+          <span class="mission-time"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ~20 min</span>
+        </div>
+      </div>
+
+      <div class="mission-card" onclick="go('mission')">
+        <div class="mission-card-top">
+          <span class="mission-card-area"><i class="ti ti-telescope" style="font-size:11px;margin-right:3px"></i>Astrofísica</span>
+          <span class="mission-card-diff diff-hard">Avançado</span>
+        </div>
+        <div class="mission-card-title">Exoplanet Atmospheric Analysis</div>
+        <div class="mission-card-desc">Escreva um e-mail de colaboração para um astrônomo do MIT.</div>
+        <div class="mission-card-footer">
+          <span class="mission-xp">+250 XP</span>
+          <span class="mission-time"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> ~30 min</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><i class="ti ti-home"></i><span>Início</span></div>
+      <div class="nav-item"><i class="ti ti-map"></i><span>Missões</span></div>
+      <div class="nav-item"><i class="ti ti-chart-bar"></i><span>Progresso</span></div>
+      <div class="nav-item"><i class="ti ti-user"></i><span>Perfil</span></div>
+    </div>
+  </div>
+
+  <!-- ── MISSION ── -->
+  <div class="screen" id="screen-mission">
+    <div class="mission-header">
+      <div class="back-btn" onclick="go('home')"><i class="ti ti-arrow-left" style="font-size:14px"></i> Voltar</div>
+      <div class="mission-h-area">Oceanografia · Iniciante</div>
+      <div class="mission-h-title">Anomalia Térmica no Atlântico</div>
+    </div>
+    <div class="mission-body">
+      <div class="hint-tip">
+        <i class="ti ti-hand-stop" style="font-size:14px"></i>
+        Passe o mouse nas palavras sublinhadas para ver a tradução
+      </div>
+      <div class="doc-card">
+        <div class="doc-from">📨 De: Dr. James Carter, NOAA · Relatório #AT-2024-11</div>
+        <p>
+          We have detected an unusual
+          <span class="word-hint">thermal anomaly<span class="tooltip">anomalia térmica</span></span>
+          in the South
+          <span class="word-hint">Atlantic<span class="tooltip">Atlântico</span></span>
+          region.
+        </p>
+        <p style="margin-top:10px">
+          Sea surface
+          <span class="word-hint">temperatures<span class="tooltip">temperaturas</span></span>
+          are
+          <span class="word-hint">approximately<span class="tooltip">aproximadamente</span></span>
+          2.3°C above the seasonal
+          <span class="word-hint">baseline<span class="tooltip">linha de base (valor de referência padrão)</span></span>.
+        </p>
+        <p style="margin-top:10px">
+          Initial data
+          <span class="word-hint">suggests<span class="tooltip">sugere / indica</span></span>
+          a possible
+          <span class="word-hint">correlation<span class="tooltip">correlação</span></span>
+          with the La Niña
+          <span class="word-hint">cycle<span class="tooltip">ciclo</span></span>.
+          Your expert
+          <span class="word-hint">assessment<span class="tooltip">avaliação / análise especializada</span></span>
+          would be greatly
+          <span class="word-hint">appreciated<span class="tooltip">apreciada / bem-vinda</span></span>.
+        </p>
+      </div>
+
+      <div class="response-label">Sua resposta ao Dr. Carter (em inglês):</div>
+      <textarea class="response-input" placeholder="Dear Dr. Carter, thank you for sharing..."></textarea>
+      <div class="response-actions">
+        <button class="btn-mic" title="Gravar voz"><i class="ti ti-microphone"></i></button>
+        <button class="btn-send" onclick="go('feedback')">Enviar resposta →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEEDBACK ── -->
+  <div class="screen" id="screen-feedback">
+    <div class="feedback-header">
+      <div class="back-btn" onclick="go('home')"><i class="ti ti-home" style="font-size:14px"></i> Missão concluída</div>
+      <div class="feedback-score">
+        <div class="score-circle">87</div>
+        <div>
+          <div class="score-label">Ótimo trabalho!</div>
+          <div class="score-details">+80 XP ganhos<br>Vocabulário: 92 · Gramática: 82</div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-body">
+      <div class="feedback-block fb-success">
+        <div class="fb-title">✓ Pontos fortes</div>
+        <div class="fb-note">Você usou corretamente "correlation" e "preliminary data" — vocabulário científico preciso. Seu tom formal foi muito adequado para e-mail acadêmico.</div>
+      </div>
+      <div class="feedback-block fb-improve">
+        <div class="fb-title">↗ Para melhorar</div>
+        <div class="fb-original">"I think the temperatures is rising because..."</div>
+        <div class="fb-corrected">"I believe the temperatures are rising because..."</div>
+        <div class="fb-note">Com "temperatures" (plural) use "are" — e "believe" soa mais científico que "think" em contexto formal.</div>
+      </div>
+      <div class="feedback-block">
+        <div class="fb-title" style="color:var(--text-secondary)">Próxima missão sugerida</div>
+        <div class="fb-note">Com base na sua resposta, você está pronto para <strong style="color:#0F6E56">CRISPR Gene Editing Update</strong> — nível intermediário.</div>
+        <button class="btn-primary" style="margin-top:12px;padding:11px" onclick="go('home')">Ver próxima missão →</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="go('home')"><i class="ti ti-home"></i><span>Início</span></div>
+      <div class="nav-item"><i class="ti ti-map"></i><span>Missões</span></div>
+      <div class="nav-item"><i class="ti ti-chart-bar"></i><span>Progresso</span></div>
+      <div class="nav-item"><i class="ti ti-user"></i><span>Perfil</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+</script>
+
 </body>
 </html>
